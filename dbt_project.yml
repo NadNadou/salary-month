@@ -1,0 +1,8 @@
+name: salary_month
+version: "1.0.0"
+profile: salary_month
+model-paths: ["models"]
+seed-paths: ["seeds"]
+seeds:
+  salary_month:
+    +delimiter: ";"

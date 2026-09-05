@@ -1,0 +1,7 @@
+salary_month:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: salary_month.duckdb
+      threads: 1
