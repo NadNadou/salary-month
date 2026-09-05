@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: Export bancaire typé et renommé en snake_case. Une ligne par opération.
+  - name: int_pay_periods
+    description: Une ligne par mois-salaire. Période = du jour de paie (dernier jour ouvré du mois précédent) à la veille de la paie suivante. Générée depuis la règle, pas depuis les données.
+  - name: fct_transactions_by_salary_month
+    description: Chaque opération rattachée à son mois calendaire et à son mois-salaire.
