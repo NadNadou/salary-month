@@ -70,12 +70,14 @@ def main():
     prompt = PROMPT.format(today=TODAY, context=rows_to_text(rows))
     resp = client.messages.create(
         model=MODEL,
-        max_tokens=1200,
+        max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
-    text = resp.content[0].text
+    text = "\n".join(block.text for block in resp.content if block.type == "text")
 
     # Each run is saved with a timestamp (not overwritten) so runs can be compared.
+    if not text:
+        raise SystemExit(f"Empty answer. stop_reason={resp.stop_reason}, blocks={[b.type for b in resp.content]}")
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     out = PROJECT_ROOT / "agent" / f"output-{stamp}.md"
     out.write_text(f"# Agent run {stamp} — {MODEL}\n\n{text}\n", encoding="utf-8")
