@@ -15,8 +15,8 @@ paydays as (
     select
         month_start,
         case dayofweek(month_end)
-            when 6 then month_end - 1   -- samedi   -> vendredi
-            when 0 then month_end - 2   -- dimanche -> vendredi
+            when 6 then month_end - 1   -- saturday -> friday
+            when 0 then month_end - 2   -- sunday   -> friday
             else month_end
         end as payday
     from month_ends

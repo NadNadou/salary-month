@@ -1,7 +1,7 @@
-"""Calendrier de paie : le salaire tombe le dernier jour ouvré du mois.
+"""Pay calendar: the salary lands on the last business day of the month.
 
-Volontairement sans jours fériés : seuls samedi et dimanche sont exclus.
-Stdlib uniquement.
+Deliberately without public holidays: only Saturday and Sunday are excluded.
+Stdlib only.
 """
 
 import calendar
@@ -11,7 +11,7 @@ SATURDAY = 5
 
 
 def last_business_day(year, month):
-    """Dernier jour du mois qui n'est ni un samedi ni un dimanche."""
+    """Last day of the month that is neither a Saturday nor a Sunday."""
     day = calendar.monthrange(year, month)[1]
     current = date(year, month, day)
     while current.weekday() >= SATURDAY:

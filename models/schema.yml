@@ -2,8 +2,8 @@ version: 2
 
 models:
   - name: stg_transactions
-    description: Export bancaire typé et renommé en snake_case. Une ligne par opération.
+    description: Bank export, typed and renamed to snake_case. One row per transaction.
   - name: int_pay_periods
-    description: Une ligne par mois-salaire. Période = du jour de paie (dernier jour ouvré du mois précédent) à la veille de la paie suivante. Générée depuis la règle, pas depuis les données.
+    description: One row per salary month. Period = from the payday (last business day of the previous month) to the day before the next payday. Generated from the rule, not from the data.
   - name: fct_transactions_by_salary_month
-    description: Chaque opération rattachée à son mois calendaire et à son mois-salaire.
+    description: Each transaction attached to its calendar month and to its salary month.

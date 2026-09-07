@@ -1,7 +1,7 @@
-"""Génère seeds/transactions.csv : un export bancaire français fictif.
+"""Generate seeds/transactions.csv: a fictional French bank export.
 
-Période couverte : 2025-12-29 -> 2026-04-07, un seul compte courant.
-Les données sont entièrement synthétiques (aucune donnée personnelle réelle).
+Period covered: 2025-12-29 -> 2026-04-07, a single current account.
+The data is entirely synthetic (no real personal data).
 """
 
 import csv
@@ -38,14 +38,14 @@ END_DATE = date(2026, 4, 7)
 SALARY_DATES = [date(2025, 12, 31), date(2026, 1, 30), date(2026, 2, 27), date(2026, 3, 31)]
 SALARY_AMOUNT = 2800.00
 
-# Prélèvements récurrents : (jour du mois, label, libellé lisible, montant, category, categoryParent)
+# Recurring direct debits: (day of month, label, readable label, amount, category, categoryParent)
 RECURRING = [
     (5, "PRLV SEPA LOYER", "Loyer", -950.00, "Loyer", "Logement"),
     (7, "PRLV SEPA TotalEnergies", "TotalEnergies", -68.00, "Energie", "Logement"),
     (15, "PRLV SEPA FREE MOBILE", "Free Mobile", -19.99, "Télécom", "Abonnements"),
 ]
 
-# Commerçants ponctuels : (enseigne, libellé lisible, category, categoryParent, min, max)
+# One-off merchants: (brand, readable label, category, categoryParent, min, max)
 MERCHANTS = [
     ("CARREFOUR", "Carrefour", "Alimentation", "Vie quotidienne", -95.00, -18.00),
     ("MONOPRIX", "Monoprix", "Alimentation", "Vie quotidienne", -72.00, -12.00),
@@ -64,7 +64,7 @@ MERCHANTS = [
 
 
 def daterange(start, end):
-    """Toutes les dates de start à end inclus."""
+    """All dates from start to end inclusive."""
     days = (end - start).days
     return [start + timedelta(days=i) for i in range(days + 1)]
 
@@ -83,7 +83,7 @@ def make_transaction(day, label, suggested, amount, category, parent, is_card):
 
 
 def make_card_expense(rng, day):
-    """Une dépense carte ponctuelle, montant tiré dans la fourchette du commerçant."""
+    """A one-off card expense, amount drawn from the merchant's range."""
     name, suggested, category, parent, low, high = rng.choice(MERCHANTS)
     amount = rng.uniform(low, high)
     label = "CARTE {} {}".format(day.strftime("%d/%m/%y"), name)
@@ -91,14 +91,14 @@ def make_card_expense(rng, day):
 
 
 def pick_days(rng, days, count):
-    """Tire count jours parmi days (avec remise : plusieurs achats le même jour)."""
+    """Draw count days among days (with replacement: several purchases on the same day)."""
     return [rng.choice(days) for _ in range(count)]
 
 
 def build_transactions(rng):
     transactions = []
 
-    # Salaires : les seules opérations positives.
+    # Salaries: the only positive transactions.
     for day in SALARY_DATES:
         transactions.append(
             make_transaction(
@@ -112,7 +112,7 @@ def build_transactions(rng):
             )
         )
 
-    # Prélèvements récurrents, uniquement ceux qui tombent dans la période.
+    # Recurring direct debits, only those falling within the period.
     for month_day, label, suggested, amount, category, parent in RECURRING:
         for year, month in [(2026, 1), (2026, 2), (2026, 3), (2026, 4)]:
             day = date(year, month, month_day)
@@ -123,12 +123,12 @@ def build_transactions(rng):
 
     expenses = [t for t in transactions if t["amount"] < 0]
 
-    # Fin décembre : au moins 2 dépenses sur les deux premiers jours de la période.
+    # End of December: at least 2 expenses on the first two days of the period.
     december_window = daterange(START_DATE, date(2025, 12, 30))
     for day in pick_days(rng, december_window, rng.randint(2, 3)):
         transactions.append(make_card_expense(rng, day))
 
-    # Fenêtres de fin de mois : au moins 3 dépenses du 28 au 31.
+    # End-of-month windows: at least 3 expenses from the 28th to the 31st.
     for year, month, last_day in [(2026, 1, 31), (2026, 2, 28), (2026, 3, 31)]:
         window = daterange(date(year, month, 28), date(year, month, last_day))
         already = sum(1 for t in expenses if t["dateOp"] in window)
@@ -136,21 +136,21 @@ def build_transactions(rng):
         for day in pick_days(rng, window, max(0, target - already)):
             transactions.append(make_card_expense(rng, day))
 
-    # Début avril : 5 à 7 dépenses entre le 1er et le 7 (loyer et énergie compris).
+    # Early April: 5 to 7 expenses between the 1st and the 7th (rent and energy included).
     april_window = daterange(date(2026, 4, 1), END_DATE)
     april_already = sum(1 for t in transactions if t["amount"] < 0 and t["dateOp"] in april_window)
     april_target = rng.randint(5, 7)
     for day in pick_days(rng, april_window, max(0, april_target - april_already)):
         transactions.append(make_card_expense(rng, day))
 
-    # Complément réparti sur le reste de la période pour atteindre 55 à 65 dépenses.
+    # Filler spread over the rest of the period to reach 55 to 65 expenses.
     filler_days = daterange(START_DATE, date(2026, 3, 31))
     total_target = rng.randint(55, 65)
     current = sum(1 for t in transactions if t["amount"] < 0)
     for day in pick_days(rng, filler_days, max(0, total_target - current)):
         transactions.append(make_card_expense(rng, day))
 
-    # Exactement 5 opérations carte dont la date de valeur est décalée de 1 ou 2 jours.
+    # Exactly 5 card transactions whose value date is shifted by 1 or 2 days.
     card_transactions = [t for t in transactions if t["is_card"]]
     for transaction in rng.sample(card_transactions, 5):
         transaction["dateVal"] = transaction["dateOp"] + timedelta(days=rng.randint(1, 2))
@@ -193,7 +193,7 @@ def main():
     write_csv(transactions, OUTPUT_PATH)
     expenses = sum(1 for t in transactions if t["amount"] < 0)
     print(
-        "{} lignes écrites dans {} ({} dépenses, {} salaires)".format(
+        "{} rows written to {} ({} expenses, {} salaries)".format(
             len(transactions),
             OUTPUT_PATH.relative_to(PROJECT_ROOT),
             expenses,
