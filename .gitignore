@@ -9,3 +9,4 @@ __pycache__/
 .user.yml
 agent/fct.csv
 agent/output-*.md
+salary-month-2.patch

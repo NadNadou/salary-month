@@ -6,3 +6,9 @@ seed-paths: ["seeds"]
 seeds:
   salary_month:
     +delimiter: ";"
+    transactions:
+      +column_types:
+        accountNum: varchar
+    holidays:
+      +column_types:
+        holiday_date: date

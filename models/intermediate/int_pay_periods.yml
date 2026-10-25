@@ -1,0 +1,87 @@
+unit_tests:
+
+  - name: payday_nominal_weekday
+    description: "Mars 2026 : le 31 est un mardi, la paie tombe le 31."
+    model: int_pay_periods
+    overrides:
+      vars: {first_month: "2026-03-01", last_month: "2026-04-01"}
+    given:
+      - input: ref('holidays')
+        rows: []
+    expect:
+      rows:
+        - {salary_month: "2026-04", period_start: 2026-03-31, period_end: 2026-04-29}
+        - {salary_month: "2026-05", period_start: 2026-04-30, period_end: null}
+
+  - name: payday_saturday_moves_to_friday
+    description: "Janvier 2026 : le 31 est un samedi, la paie recule au vendredi 30."
+    model: int_pay_periods
+    overrides:
+      vars: {first_month: "2026-01-01", last_month: "2026-01-01"}
+    given:
+      - input: ref('holidays')
+        rows: []
+    expect:
+      rows:
+        - {salary_month: "2026-02", period_start: 2026-01-30}
+
+  - name: payday_sunday_moves_to_friday
+    description: "Mai 2026 : le 31 est un dimanche, la paie recule au vendredi 29."
+    model: int_pay_periods
+    overrides:
+      vars: {first_month: "2026-05-01", last_month: "2026-05-01"}
+    given:
+      - input: ref('holidays')
+        rows: []
+    expect:
+      rows:
+        - {salary_month: "2026-06", period_start: 2026-05-29}
+
+  - name: payday_holiday_moves_back_one_day
+    description: >
+      Férié inventé le jeudi 30/04/2026 : la paie recule au mercredi 29.
+      Aucun vrai férié français ne tombe sur un dernier jour ouvré entre 2020 et 2040,
+      d'où un férié fabriqué : on teste la règle, pas le calendrier.
+    model: int_pay_periods
+    overrides:
+      vars: {first_month: "2026-04-01", last_month: "2026-04-01"}
+    given:
+      - input: ref('holidays')
+        rows:
+          - {holiday_date: 2026-04-30}
+    expect:
+      rows:
+        - {salary_month: "2026-05", period_start: 2026-04-29}
+
+  - name: periods_are_contiguous
+    description: "Chaque période finit la veille de la paie suivante : pas de trou, pas de chevauchement."
+    model: int_pay_periods
+    overrides:
+      vars: {first_month: "2025-11-01", last_month: "2026-01-01"}
+    given:
+      - input: ref('holidays')
+        rows: []
+    expect:
+      rows:
+        - {salary_month: "2025-12", period_start: 2025-11-28, period_end: 2025-12-30}
+        - {salary_month: "2026-01", period_start: 2025-12-31, period_end: 2026-01-29}
+        - {salary_month: "2026-02", period_start: 2026-01-30, period_end: null}
+
+  - name: expenses_before_first_payday_are_attached
+    description: "Dépenses des 29-30/12 (avant la 1re paie du seed) : salary_month = 2025-12, pas NULL."
+    model: fct_transactions_by_salary_month
+    given:
+      - input: ref('stg_transactions')
+        rows:
+          - {date_op: 2025-12-29, amount: -11.88}
+          - {date_op: 2025-12-30, amount: -50.08}
+          - {date_op: 2025-12-31, amount: 2800.00}
+      - input: ref('int_pay_periods')
+        rows:
+          - {salary_month: "2025-12", period_start: 2025-11-28, period_end: 2025-12-30}
+          - {salary_month: "2026-01", period_start: 2025-12-31, period_end: 2026-01-29}
+    expect:
+      rows:
+        - {date_op: 2025-12-29, salary_month: "2025-12"}
+        - {date_op: 2025-12-30, salary_month: "2025-12"}
+        - {date_op: 2025-12-31, salary_month: "2026-01"}

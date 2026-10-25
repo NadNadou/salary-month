@@ -1,6 +1,8 @@
 with months as (
     select unnest(generate_series(
-        date '2025-11-01', date '2026-06-01', interval 1 month
+        date '{{ var("first_month", "2025-11-01") }}',
+        date '{{ var("last_month", "2026-06-01") }}',
+        interval 1 month
     ))::date as month_start
 ),
 
@@ -12,14 +14,15 @@ month_ends as (
 ),
 
 paydays as (
+    -- last day of the month that is neither a weekend nor a holiday
     select
-        month_start,
-        case dayofweek(month_end)
-            when 6 then month_end - 1   -- saturday -> friday
-            when 0 then month_end - 2   -- sunday   -> friday
-            else month_end
-        end as payday
-    from month_ends
+        m.month_start,
+        max(d.day)::date as payday
+    from month_ends m,
+        unnest(generate_series(m.month_end - 6, m.month_end, interval 1 day)) as d(day)
+    where dayofweek(d.day) not in (0, 6)   -- 0 = sunday, 6 = saturday
+      and d.day::date not in (select holiday_date from {{ ref('holidays') }})
+    group by m.month_start
 )
 
 select
