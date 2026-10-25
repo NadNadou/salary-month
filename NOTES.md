@@ -24,3 +24,16 @@ Same data, same prompt. Run 1 misread a date and rationalised it (70% confidence
 Run 2 read all four dates correctly (85% confidence). Both predicted April 30.
 Interpretation was stable and useful across both runs (nothing notable, partial month).
 Rule inference was not. Give the agent computed facts, not raw rows to count.
+## 2026-10-25 — #2 act 3: the agent reviews the unit tests (two runs)
+Same prompt twice: rule SQL + test .yml, "list what is missing, do not touch the rule".
+Run 1: 7 cases, 70% confidence. Run 2: 8 cases, 60% confidence.
+- Stable across runs: holiday + weekend cascade, lookback window exhausted, leap February,
+  holiday on a weekend, transaction after the last payday, transaction before the first period.
+- Run 2 only, and the best find of both: a NULL in holidays.csv makes `not in` unknown for every
+  row, so all paydays vanish silently. Test was red, fixed with `where holiday_date is not null`.
+- Wrong: "holiday on a weekend could cause duplicates from the join". There is no join.
+- Run 1 said 4 non-working days exhaust the 7-day window; run 2 corrected it to 7+.
+- Both runs proposed that a transaction after the last payday "should attach" to the open period.
+  That is a business decision, not a test case. Decided the opposite: salary_month stays NULL.
+Lesson: the agent widens the list well. It also invents mechanisms and slips in decisions
+dressed as expectations. Read every line. The rule executes, the agent challenges, a human decides.

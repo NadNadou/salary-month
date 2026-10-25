@@ -21,7 +21,7 @@ paydays as (
     from month_ends m,
         unnest(generate_series(m.month_end - 6, m.month_end, interval 1 day)) as d(day)
     where dayofweek(d.day) not in (0, 6)   -- 0 = sunday, 6 = saturday
-      and d.day::date not in (select holiday_date from {{ ref('holidays') }})
+      and d.day::date not in (select holiday_date from {{ ref('holidays') }} where holiday_date is not null)
     group by m.month_start
 )
 

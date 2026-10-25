@@ -85,3 +85,52 @@ unit_tests:
         - {date_op: 2025-12-29, salary_month: "2025-12"}
         - {date_op: 2025-12-30, salary_month: "2025-12"}
         - {date_op: 2025-12-31, salary_month: "2026-01"}
+
+  - name: payday_holiday_and_weekend_cascade
+    description: "Janvier 2026 : le 31 est un samedi et le vendredi 30 est férié (inventé). La paie recule au jeudi 29."
+    model: int_pay_periods
+    overrides:
+      vars: {first_month: "2026-01-01", last_month: "2026-01-01"}
+    given:
+      - input: ref('holidays')
+        rows:
+          - {holiday_date: 2026-01-30}
+    expect:
+      rows:
+        - {salary_month: "2026-02", period_start: 2026-01-29}
+
+  - name: null_holiday_is_ignored
+    description: >
+      Une ligne vide dans holidays.csv ne doit rien changer.
+      Sans garde-fou, `not in` avec un NULL fait disparaître toutes les paies (trouvé par l'agent, run 2).
+    model: int_pay_periods
+    overrides:
+      vars: {first_month: "2026-03-01", last_month: "2026-03-01"}
+    given:
+      - input: ref('holidays')
+        rows:
+          - {holiday_date: null}
+    expect:
+      rows:
+        - {salary_month: "2026-04", period_start: 2026-03-31}
+
+  - name: expenses_outside_known_periods_are_not_attached
+    description: >
+      Décision : une dépense avant la première période ou après la dernière paie connue
+      n'a pas de mois de paie (salary_month NULL). On ne devine pas une période qui n'existe pas encore.
+    model: fct_transactions_by_salary_month
+    given:
+      - input: ref('stg_transactions')
+        rows:
+          - {date_op: 2025-11-15, amount: -20.00}
+          - {date_op: 2026-01-10, amount: -30.00}
+          - {date_op: 2026-02-10, amount: -40.00}
+      - input: ref('int_pay_periods')
+        rows:
+          - {salary_month: "2026-01", period_start: 2025-12-31, period_end: 2026-01-29}
+          - {salary_month: "2026-02", period_start: 2026-01-30, period_end: null}
+    expect:
+      rows:
+        - {date_op: 2025-11-15, salary_month: null}
+        - {date_op: 2026-01-10, salary_month: "2026-01"}
+        - {date_op: 2026-02-10, salary_month: null}
